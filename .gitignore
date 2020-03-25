@@ -1,0 +1,9 @@
+__pycache__
+keys.py
+data
+models
+temp
+backup
+*.csv
+*.txt
+.ipynb_checkpoints
