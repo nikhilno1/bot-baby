@@ -3,7 +3,8 @@ import urllib.parse
 from boto3.dynamodb.conditions import Key
 
 REGION = "ap-south-1"
-INSTANCE_ID = 'i-0bbb4030d18a38d36'
+#INSTANCE_ID = 'i-0bbb4030d18a38d36'
+INSTANCE_ID = "i-02719d429a8908ae6"
 ec2_client = boto3.client("ec2", region_name=REGION)
 ec2_resource = boto3.resource("ec2", region_name=REGION)
 dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
@@ -61,6 +62,8 @@ def lambda_handler(event, context):
     #topn = int(event["queryStringParameters"]["top_k"])
     topn = 0
     
+    batch_size = 20
+    
     # Check if the prompt is already present in the DynamodDB
     table = dynamo_resource.Table('gpt2-tweets-right')
     timeout = time.time() + 10   # 10 second from now
@@ -93,8 +96,8 @@ def lambda_handler(event, context):
                 "sudo -i -u ubuntu bash <<-EOF",
                 "source ~/.bashrc",
                 "source env/bin/activate",
-                f"curl --location --request GET 'http://127.0.0.1:8080?prompt={prompt_url}&num_samples={samples}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
-                #f"python3 gpt2-tweets.py --prompt=\"{prompt}\" --num_samples={samples} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
+                #f"curl --location --request GET 'http://127.0.0.1:8080?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
+                f"python3 gpt2-tweets.py --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
     
     print(commands)
     execute_commands_on_linux_instances(ssm_client, commands, [INSTANCE_ID])
