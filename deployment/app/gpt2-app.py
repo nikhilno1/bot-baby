@@ -68,8 +68,9 @@ async def homepage(request):
                              truncate=params.get('truncate', "<|endoftext|>"),
                              include_prefix=str(params.get(
                                  'include_prefix', True)).lower() == 'true',
+                             batch_size=int(params.get('batch_size', 3)),
                              return_as_list=True
-                             )
+                         )
     logging.info("======1=======")
     logging.info(unproc_tweets_list)
     
