@@ -1,6 +1,5 @@
 const API_ENDPOINT = "https://eekq9x0azg.execute-api.ap-south-1.amazonaws.com/gpt2"
 const prompt_ = document.querySelector('#prompt');
-const model_ = document.querySelector('#model');
 const button = document.querySelector('#get_tweets');
 const tweetArea = document.querySelector('#tweet-area')
 
@@ -16,7 +15,7 @@ button.addEventListener('click', () => {
     button.disabled = true;   
     button.textContent = "Fetching";
     
-    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
+    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=left`, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
 
@@ -25,9 +24,22 @@ button.addEventListener('click', () => {
     }).then((data) => {
         return JSON.parse(data);
     }).then((data) => {
-        addDataToUI(data);
+        addDataToUI(data, 'left');
         button.disabled = false;
-        button.textContent = 'Generate'
+        button.textContent = 'Generate Tweets'
+    });
+    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
+      method: 'GET',
+      headers: { 'content-type': 'application/json' },
+
+    }).then((response) => {
+      return response.json()
+    }).then((data) => {
+      return JSON.parse(data);
+    }).then((data) => {
+      addDataToUI(data, 'right');
+      button.disabled = false;
+      button.textContent = 'Generate Tweets'
     });
 });
 
@@ -38,15 +50,17 @@ function truncatePrompt(prompt) {
     return prompt.substring(0, index)
 }
 
-function addDataToUI(data){
-
-    const left = tweetArea.childNodes[1];
-    const right = tweetArea.childNodes[3];
+function addDataToUI(data, side){
+    let area = null;
+    if(side === 'left'){ 
+      area = tweetArea.childNodes[1];
+    }else{ 
+      area = tweetArea.childNodes[3];
+    }
     
     for(i = 0; i < data.length; i++){
         d = data[i];
-        addTweet(d, left);
-        addTweet(d, right);
+        addTweet(d, area);
     }
 }
 
