@@ -1,5 +1,6 @@
 const API_ENDPOINT = "https://eekq9x0azg.execute-api.ap-south-1.amazonaws.com/gpt2"
 const prompt_ = document.querySelector('#prompt');
+const model_ = document.querySelector('#model');
 const button = document.querySelector('#get_tweets');
 const tweetArea = document.querySelector('#tweet-area')
 
@@ -15,7 +16,7 @@ button.addEventListener('click', () => {
     button.disabled = true;   
     button.textContent = "Fetching";
     
-    fetch(`${API_ENDPOINT}?prompt=${prompt}`, {
+    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
 
