@@ -1,0 +1,11 @@
+main{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+#tweet-area{
+    display: flex;
+    justify-content: space-evenly;
+}
