@@ -9,3 +9,15 @@ main{
     display: flex;
     justify-content: space-evenly;
 }
+
+input[type=text], textarea {
+    border-style: inset;
+    border-width: 2px;
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  

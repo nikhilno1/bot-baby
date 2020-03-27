@@ -43,6 +43,10 @@ def lambda_handler(event, context):
     print('## EVENT')
     print(event)
     
+    model = event["queryStringParameters"]["model"].strip()
+    if model != "left" and model != "right":
+        model = "left"
+    
     prompt = event["queryStringParameters"]["prompt"].strip()
     prompt = truncate_to_n_words(prompt, 20)
     if prompt is None:
@@ -65,7 +69,7 @@ def lambda_handler(event, context):
     batch_size = 20
     
     # Check if the prompt is already present in the DynamodDB
-    table = dynamo_resource.Table('gpt2-tweets-right')
+    table = dynamo_resource.Table('gpt2-tweets-' + model)
     timeout = time.time() + 10   # 10 second from now
     while True:
         resp = table.query(KeyConditionExpression=Key('prompt').eq(prompt))
@@ -97,7 +101,7 @@ def lambda_handler(event, context):
                 "source ~/.bashrc",
                 "source env/bin/activate",
                 #f"curl --location --request GET 'http://127.0.0.1:8080?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
-                f"python3 gpt2-tweets.py --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
+                f"python3 gpt2-script.py --model=\"{model}\" --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
     
     print(commands)
     execute_commands_on_linux_instances(ssm_client, commands, [INSTANCE_ID])
@@ -113,3 +117,4 @@ def lambda_handler(event, context):
     print(resp['Items'])
     
     return format_response(resp['Items'][0]['text'], 200)
+

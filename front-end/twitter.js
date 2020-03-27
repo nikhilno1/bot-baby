@@ -27,7 +27,7 @@ button.addEventListener('click', () => {
     }).then((data) => {
         addDataToUI(data);
         button.disabled = false;
-        button.textContent = 'Generate Tweets'
+        button.textContent = 'Generate'
     });
 });
 
