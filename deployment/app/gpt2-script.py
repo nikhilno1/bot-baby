@@ -1,5 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
+import sys
+import socket
+import time
 import logging
 import argparse
 import json
@@ -12,6 +16,7 @@ from nltk.tokenize import sent_tokenize
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="left")
     parser.add_argument("--prompt", type=str, default=" ")
     parser.add_argument("--truncate", type=str, default="<|endoftext|>")
     parser.add_argument("--include_prefix", type=str, default=False)
@@ -28,18 +33,34 @@ def main():
                     filename='/tmp/inference.log',
                     filemode='a')
 
-    logging.info('Starting gpt2 session')
+    pid = str(os.getpid())
+    loop = 0
+    while get_lock('gpt2-script') is False and loop < 120:
+        if loop % 30 == 0:
+            logging.info('[%s]: Another instance found running. Sleeping', pid)
+        time.sleep(1)
+        loop += 1
 
+    if loop == 120:
+        logging.info('[%s]: Found instance running for 2 mins. Exiting.', pid)
+        sys.exit()
+
+    
+    logging.info('[%s]: Starting gpt2 session', pid)
+    checkpoint_dir = "./model/" + args.model + "/checkpoint"
+    print("Checkpoint dir: %s" % checkpoint_dir)
     sess = gpt2.start_tf_sess(threads=1)
-    gpt2.load_gpt2(sess)
+    gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_dir)
 
     prompt=args.prompt[:20]
     if prompt is " ":
         prompt = "<|startoftext|>"
 
-    logging.info('Generating text for [%s]', prompt)
+    logging.info('[%s]: Generating text for [%s], model: [%s]', pid, prompt, args.model)
+    logging.info('[%s]: Adding to DynamoDB ID: [%s], tweet: [%s]', pid, args.prompt.lower(), json_text)
 
     unproc_tweets_list = gpt2.generate(sess,
+                            checkpoint_dir=checkpoint_dir,
                             length=args.length,
                             nsamples=args.num_samples,
                             temperature=args.temperature,
@@ -50,7 +71,7 @@ def main():
                             include_prefix=str(args.include_prefix).lower() == 'true',
                             batch_size=args.batch_size,
                             return_as_list=True
-                         )
+                            )
 
     proc_tweets_list = []
     deleted_list = []
@@ -79,18 +100,17 @@ def main():
 
     if len(proc_tweets_list) > 0:
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
-        table = dynamodb.Table('gpt2-tweets-right')
+        table = dynamodb.Table('gpt2-tweets-' + args.model)
         json_text = json.dumps(proc_tweets_list)
-        logging.info('Adding to DynamoDB ID: %s, tweet: %s', args.prompt, json_text)
+        logging.info('[%s]: Adding to DynamoDB ID: [%s], model: [%s]', pid, args.prompt.lower(), args.model)
         print
         table.put_item(
             Item={
-                'prompt' : args.prompt,
+                'prompt' : args.prompt.lower(),
                 'text' : json_text
             }
         )
-    logging.info('Finished executing script')
-
+        logging.info('[%s]: Finished executing script', pid)
+  
 if __name__ == '__main__':
     main()
-

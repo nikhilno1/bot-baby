@@ -3,6 +3,14 @@ const prompt_ = document.querySelector('#prompt');
 const button = document.querySelector('#get_tweets');
 const tweetArea = document.querySelector('#tweet-area')
 
+var input = document.getElementById("prompt");
+input.addEventListener("keyup", function(event) {
+  if (event.keyCode === 13) {
+   event.preventDefault();   
+   document.getElementById("get_tweets").click();
+  }
+});
+
 button.addEventListener('click', () => {
     if (prompt_.value.length == 0){ 
         alert("Your text prompt is empty! Please trigger the model with at least one word.");
@@ -52,13 +60,14 @@ function truncatePrompt(prompt) {
 }
 
 function addDataToUI(data, side){
+    console.log("Inside addDataToUI")    
     let area = null;
     if(side === 'left'){ 
       area = tweetArea.childNodes[1];
     }else{ 
       area = tweetArea.childNodes[3];
     }
-    
+    area.innerHTML = "";
     for(i = 0; i < data.length; i++){
         d = data[i];
         addTweet(d, area, side);
@@ -68,8 +77,8 @@ function addDataToUI(data, side){
 function addTweet(tweet, area, side){      
     const tweet_html = constructTweetHTML(tweet, side);
     const div =  document.createElement('div');
-    div.innerHTML = tweet_html;
-    area.appendChild(div);
+    div.innerHTML = tweet_html;    
+    area.appendChild(div);    
 }
 
 function add_headline_image() {  
