@@ -23,10 +23,11 @@ button.addEventListener('click', () => {
         return response.json()
     }).then((data) => {
         return JSON.parse(data);
-    }).then((data) => {
+    }).then((data) => {        
+        //add_headline_image();
         addDataToUI(data, 'left');
         button.disabled = false;
-        button.textContent = 'Generate Tweets'
+        button.textContent = 'Generate'
     });
     fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
       method: 'GET',
@@ -39,7 +40,7 @@ button.addEventListener('click', () => {
     }).then((data) => {
       addDataToUI(data, 'right');
       button.disabled = false;
-      button.textContent = 'Generate Tweets'
+      button.textContent = 'Generate'
     });
 });
 
@@ -60,33 +61,56 @@ function addDataToUI(data, side){
     
     for(i = 0; i < data.length; i++){
         d = data[i];
-        addTweet(d, area);
+        addTweet(d, area, side);
     }
 }
 
-function addTweet(tweet, area){
-    const tweet_html = constructTweetHTML(tweet);
+function addTweet(tweet, area, side){      
+    const tweet_html = constructTweetHTML(tweet, side);
     const div =  document.createElement('div');
     div.innerHTML = tweet_html;
     area.appendChild(div);
 }
 
+function add_headline_image() {  
+  show_image("./images/collage.jpg", 800,600, "Headline image");
+}
 
-function constructTweetHTML(tweet){
+function show_image(src, width, height, alt) {
+  var img = document.createElement("img");
+  img.src = src;
+  img.width = width;
+  img.height = height;
+  img.alt = alt;
+  
+  var src = document.getElementById("x");
+  src.appendChild(img);
+}
+
+function constructTweetHTML(tweet, side){
+    if(side === 'left'){ 
+      src= './images/boss-baby-left-1.png'
+      username='Left-wing Baby'
+      handle='@LeftWingBaby'
+    }else{ 
+      src = './images/boss-baby-right-3.png'
+      username='Right-wing Baby'
+      handle='@RightWingBaby'
+    }
     return `<div id="tweet-ui" class="tweet-body max-w-xl mx-auto my-6">
     <article class="border-t border-b border-gray-400 p-2 hover:bg-gray-100 flex flex-wrap items-start cursor-pointer">
-      <img src="https://pbs.twimg.com/profile_images/1111915116579086336/HKxtnLsO_reasonably_small.jpg" class="rounded-full w-12 h-12 mr-3" />
+      <img src=${src} class="rounded-full w-12 h-12 mr-3" />
   
       <div class="flex flex-wrap justify-start items-start flex-1">
   
         <div class="flex flex-1 items-center">
           <div class="flex-1 flex items-center">
             <h3 class="mr-2 font-bold hover:underline">
-              <a href="#">Bot Baby</a>
+              <a href="#">${username}</a>
             </h3>
             <span class="mr-2"><svg class="w-4 h-4" fill="#1da1f2" viewBox="0 0 24 24" aria-label="Verified account" class=""><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.495.782 2.798 1.942 3.486-.02.17-.032.34-.032.514 0 2.21 1.708 4 3.818 4 .47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 2.11 0 3.818-1.79 3.818-4 0-.174-.012-.344-.033-.513 1.158-.687 1.943-1.99 1.943-3.484zm-6.616-3.334l-4.334 6.5c-.145.217-.382.334-.625.334-.143 0-.288-.04-.416-.126l-.115-.094-2.415-2.415c-.293-.293-.293-.768 0-1.06s.768-.294 1.06 0l1.77 1.767 3.825-5.74c.23-.345.696-.436 1.04-.207.346.23.44.696.21 1.04z"></path></g></svg>
             </span>
-            <span class="text-gray-600 text-sm mr-1">@BotBaby</span>
+            <span class="text-gray-600 text-sm mr-1">${handle}</span>
             <span class="text-gray-600 text-sm mr-1">&nbsp;.&nbsp;</span>
             <span class="text-gray-600 text-sm">Apr 7</span>
           </div>
