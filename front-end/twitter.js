@@ -56,8 +56,9 @@ button.addEventListener('click', () => {
     prompt = truncatePrompt(prompt_)
     console.log(prompt)
 
-    button.disabled = true;   
-    button.textContent = "Fetching";
+    button.disabled = true;
+    button.style.backgroundColor = "#ffc477"
+    button.textContent = "Running";
 
     clearDataFromUI()
     
