@@ -63,9 +63,7 @@ button.addEventListener('click', () => {
     button.disabled = true;
     button.style.backgroundColor = "#ffc477"
     button.textContent = "Running";    
-    rendered['left'] = false
-    rendered['right'] = false
-
+    
     clearDataFromUI()
     showSpinner()
     var models = ["left", "right"];
@@ -110,6 +108,9 @@ function removeSpinner(){
 function clearDataFromUI(data, side){    
   let area = null;
   
+  rendered['left'] = false
+  rendered['right'] = false
+
   area = tweetArea.childNodes[1];
   area.innerHTML = "";
   area = tweetArea.childNodes[3];  
