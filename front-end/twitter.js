@@ -11,6 +11,14 @@ input.addEventListener("keyup", function(event) {
   }
 });
 
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
+
 button.addEventListener('click', () => {
     if (prompt_.value.length == 0){ 
         alert("Your text prompt is empty! Please trigger the model with at least one word.");
@@ -36,7 +44,8 @@ button.addEventListener('click', () => {
         addDataToUI(data, 'left');
         button.disabled = false;
         button.textContent = 'Generate'
-    });
+    });    
+
     fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
       method: 'GET',
       headers: { 'content-type': 'application/json' },
@@ -59,8 +68,7 @@ function truncatePrompt(prompt) {
     return prompt.substring(0, index)
 }
 
-function addDataToUI(data, side){
-    console.log("Inside addDataToUI")    
+function addDataToUI(data, side){    
     let area = null;
     if(side === 'left'){ 
       area = tweetArea.childNodes[1];
@@ -68,6 +76,7 @@ function addDataToUI(data, side){
       area = tweetArea.childNodes[3];
     }
     area.innerHTML = "";
+    data.sort(() => Math.random() - 0.5);
     for(i = 0; i < data.length; i++){
         d = data[i];
         addTweet(d, area, side);
