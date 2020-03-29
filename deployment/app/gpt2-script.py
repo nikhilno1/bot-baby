@@ -13,6 +13,22 @@ import boto3
 import nltk
 from nltk.tokenize import sent_tokenize
 
+def get_lock(process_name):
+    # Without holding a reference to our socket somewhere it gets garbage
+    # collected when the function exits
+    get_lock._lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
+    try:
+        # The null byte (\0) means the the socket is created 
+        # in the abstract namespace instead of being created 
+        # on the file system itself.
+        # Works only in Linux
+        get_lock._lock_socket.bind('\0' + process_name)
+        print('I got the lock')
+        return True
+    except socket.error:
+        print('lock exists')
+        return False
 
 def main():
     parser = argparse.ArgumentParser()
@@ -45,7 +61,6 @@ def main():
         logging.info('[%s]: Found instance running for 2 mins. Exiting.', pid)
         sys.exit()
 
-    
     logging.info('[%s]: Starting gpt2 session', pid)
     checkpoint_dir = "./model/" + args.model + "/checkpoint"
     print("Checkpoint dir: %s" % checkpoint_dir)
@@ -57,7 +72,6 @@ def main():
         prompt = "<|startoftext|>"
 
     logging.info('[%s]: Generating text for [%s], model: [%s]', pid, prompt, args.model)
-    logging.info('[%s]: Adding to DynamoDB ID: [%s], tweet: [%s]', pid, args.prompt.lower(), json_text)
 
     unproc_tweets_list = gpt2.generate(sess,
                             checkpoint_dir=checkpoint_dir,
@@ -71,7 +85,7 @@ def main():
                             include_prefix=str(args.include_prefix).lower() == 'true',
                             batch_size=args.batch_size,
                             return_as_list=True
-                            )
+                         )
 
     proc_tweets_list = []
     deleted_list = []
@@ -111,6 +125,6 @@ def main():
             }
         )
         logging.info('[%s]: Finished executing script', pid)
-  
+
 if __name__ == '__main__':
     main()

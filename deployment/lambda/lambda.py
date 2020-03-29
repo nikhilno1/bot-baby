@@ -41,16 +41,18 @@ def truncate_to_n_words(s, n):
 def lambda_handler(event, context):
     
     print('## EVENT')
-    print(event)
+    #print(event)
     
     model = event["queryStringParameters"]["model"].strip()
     if model != "left" and model != "right":
         model = "left"
     
     prompt = event["queryStringParameters"]["prompt"].strip()
+    print("prompt: %s, model: %s" % (prompt, model))
     prompt = truncate_to_n_words(prompt, 20)
     if prompt is None:
         prompt = "The"
+    prompt_lcase = prompt.lower()
     
     #samples = int(event["queryStringParameters"]["num_samples"])
     samples = 20
@@ -58,13 +60,13 @@ def lambda_handler(event, context):
     #words = int(event["queryStringParameters"]["length"])
     words = 80
     #temperature = float(event["queryStringParameters"]["temperature"])
-    temperature = 1.0
+    temperature = 0.7
     
     #nucleus = float(event["queryStringParameters"]["top_p"])
     nucleus = 0.9
     
     #topn = int(event["queryStringParameters"]["top_k"])
-    topn = 0
+    topn = 40
     
     batch_size = 20
     
@@ -72,7 +74,7 @@ def lambda_handler(event, context):
     table = dynamo_resource.Table('gpt2-tweets-' + model)
     timeout = time.time() + 10   # 10 second from now
     while True:
-        resp = table.query(KeyConditionExpression=Key('prompt').eq(prompt))
+        resp = table.query(KeyConditionExpression=Key('prompt').eq(prompt_lcase))
         if len(resp['Items'])>0 or time.time() > timeout:
             break
         time.sleep(1)
@@ -96,7 +98,7 @@ def lambda_handler(event, context):
     prompt_url = urllib.parse.quote(prompt)
     
     commands = ["cd /home/ubuntu",
-                "shutdown -h +30",
+                "shutdown -h +15",
                 "sudo -i -u ubuntu bash <<-EOF",
                 "source ~/.bashrc",
                 "source env/bin/activate",
@@ -108,7 +110,7 @@ def lambda_handler(event, context):
     
     timeout = time.time() + 60*2   # 2 minutes from now
     while True:
-        resp = table.query(KeyConditionExpression=Key('prompt').eq(prompt))
+        resp = table.query(KeyConditionExpression=Key('prompt').eq(prompt_lcase))
         if len(resp['Items'])>0 or time.time() > timeout:
             break
         time.sleep(1)
@@ -117,4 +119,3 @@ def lambda_handler(event, context):
     print(resp['Items'])
     
     return format_response(resp['Items'][0]['text'], 200)
-
