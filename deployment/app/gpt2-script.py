@@ -67,7 +67,8 @@ def main():
     sess = gpt2.start_tf_sess(threads=1)
     gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_dir)
 
-    prompt=args.prompt[:20]
+    #prompt=args.prompt[:100]
+    prompt=args.prompt
     if prompt is " ":
         prompt = "<|startoftext|>"
 
@@ -128,3 +129,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

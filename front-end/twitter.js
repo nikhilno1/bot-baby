@@ -62,7 +62,9 @@ button.addEventListener('click', () => {
 
     button.disabled = true;
     button.style.backgroundColor = "#ffc477"
-    button.textContent = "Running";
+    button.textContent = "Running";    
+    rendered['left'] = false
+    rendered['right'] = false
 
     clearDataFromUI()
     showSpinner()
@@ -79,13 +81,12 @@ button.addEventListener('click', () => {
           return JSON.parse(data);
       }).then((data) => {        
           //add_headline_image();
-
           addDataToUI(data, model);
-          button.disabled = false;
-          button.textContent = 'Generate'
-          
-          
-          removeSpinner()
+          if(rendered['left'] && rendered['right']) {
+            button.disabled = false;
+            button.textContent = 'Generate'          
+            removeSpinner()
+          }  
       }).catch(function(error){
        
       });;
@@ -100,12 +101,10 @@ function truncatePrompt(prompt) {
 }
 
 function showSpinner(){
-
-    overlay.style.display = 'block';
+  overlay.style.display = 'block';
 }
-function removeSpinner(){
-  if(rendered['left'] && rendered['right'])
-    overlay.style.display = 'none';
+function removeSpinner(){  
+  overlay.style.display = 'none';
 }
 
 function clearDataFromUI(data, side){    
@@ -116,7 +115,6 @@ function clearDataFromUI(data, side){
   area = tweetArea.childNodes[3];  
   area.innerHTML = "";
 }
-
 
 function addDataToUI(data, side){    
     let area = null;
@@ -131,8 +129,8 @@ function addDataToUI(data, side){
         d = data[i];
         addTweet(d, area, side);
     }
-    rendered[side] = true
-  
+    rendered[side] = true  
+    console.log("Rendered true for " + side)
 }
 
 function addTweet(tweet, area, side){      

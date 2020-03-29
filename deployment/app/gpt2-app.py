@@ -52,7 +52,8 @@ async def homepage(request):
         return UJSONResponse({'text': ''},
                              headers=response_header)
 
-    prompt=params.get('prompt', '')[:20]
+    #prompt=params.get('prompt', '')[:100]
+    prompt=params.get('prompt', '')
     if prompt is None:
         prompt = "<|startoftext|>"
 
@@ -87,7 +88,6 @@ async def homepage(request):
         del t_list[-1]
         t = ' '.join(t_list)
 
-
         # Some tweets have repeated words. Remove the ones below a threshold. 
         if len(set(t.split())) > 20:
             proc_tweets_list.append(t)
@@ -104,11 +104,11 @@ async def homepage(request):
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
         table = dynamodb.Table('gpt2-tweets-right')
         json_text = json.dumps(proc_tweets_list)
-        logging.info('Adding to DynamoDB ID: %s, tweet: %s', prompt, json_text)
+        logging.info('Adding to DynamoDB ID: %s, tweet: %s', prompt.lower(), json_text)
         print
         table.put_item(
             Item={
-                'prompt' : prompt,
+                'prompt' : prompt.lower(),
                 'text' : json_text
             }
         )
@@ -128,4 +128,3 @@ async def homepage(request):
 
 if __name__ == '__main__':
     uvicorn.run(app, host='127.0.0.1', port=int(os.environ.get('PORT', 8080)))
-
