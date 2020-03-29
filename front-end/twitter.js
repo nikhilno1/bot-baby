@@ -2,6 +2,12 @@ const API_ENDPOINT = "https://eekq9x0azg.execute-api.ap-south-1.amazonaws.com/gp
 const prompt_ = document.querySelector('#prompt');
 const button = document.querySelector('#get_tweets');
 const tweetArea = document.querySelector('#tweet-area')
+const overlay = document.querySelector('.bg-overlay')
+const overlayContent = document.querySelector('.overlay-content')
+const rendered = {
+  'left': false,
+  'right':false
+}
 
 var input = document.getElementById("prompt");
 input.addEventListener("keyup", function(event) {
@@ -52,19 +58,17 @@ button.addEventListener('click', () => {
         alert("Your text prompt is empty! Please trigger the model with at least one word.");
         return false
     }
-
     prompt = truncatePrompt(prompt_)
-    console.log(prompt)
 
     button.disabled = true;
     button.style.backgroundColor = "#ffc477"
     button.textContent = "Running";
 
     clearDataFromUI()
-    
+    showSpinner()
     var models = ["left", "right"];
     models.forEach(function(model) {
-      //console.log("Calling API for " + model);
+   
       fetchRetry(`${API_ENDPOINT}?prompt=${prompt}&model=${model}`, 10000,6, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
@@ -75,11 +79,15 @@ button.addEventListener('click', () => {
           return JSON.parse(data);
       }).then((data) => {        
           //add_headline_image();
+
           addDataToUI(data, model);
           button.disabled = false;
           button.textContent = 'Generate'
+          rendered[model] = true
+          console.log(`rendered[${model}] set to true`)
+          removeSpinner()
       }).catch(function(error){
-          console.log(error);
+       
       });;
     });
 });
@@ -89,6 +97,15 @@ function truncatePrompt(prompt) {
     prompt = prompt.substring(0, 100)
     index = prompt.lastIndexOf(" ")
     return prompt.substring(0, index)
+}
+
+function showSpinner(){
+
+    overlay.style.display = 'block';
+}
+function removeSpinner(){
+  if(rendered['left'] && rendered['right'])
+    overlay.style.display = 'none';
 }
 
 function clearDataFromUI(data, side){    

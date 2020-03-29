@@ -1,3 +1,6 @@
+*{
+    font-family: 'Lato';
+}
 main{
     display: flex;
     justify-content: center;
@@ -8,6 +11,9 @@ main{
 #tweet-area{
     display: flex;
     justify-content: space-evenly;
+}
+.tweet-half{
+    flex: 1;
 }
 
 input[type=text], textarea {
@@ -45,4 +51,37 @@ img {
 
 .buttons:hover {
     background-color: #77b7ff;
+}
+
+.bg-overlay{
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0,0,0, 0.4);
+    position: absolute;
+    top: 0;
+/*     display: flex;
+    justify-content: center;
+    align-items: center; */
+    display: none;
+}
+
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+ 
+.spinner:before {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5rem;
+  height: 5rem;
+  margin-top: -2.5rem;
+  margin-left: -2.5rem;
+  border-radius: 50%;
+  border: 0.5rem solid #888;
+  border-top-color: rgb(86, 159, 207);
+  z-index: 3;
+  animation: spinner .6s linear infinite;
 }
