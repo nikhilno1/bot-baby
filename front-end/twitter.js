@@ -83,8 +83,8 @@ button.addEventListener('click', () => {
           addDataToUI(data, model);
           button.disabled = false;
           button.textContent = 'Generate'
-          rendered[model] = true
-          console.log(`rendered[${model}] set to true`)
+          
+          
           removeSpinner()
       }).catch(function(error){
        
@@ -131,6 +131,8 @@ function addDataToUI(data, side){
         d = data[i];
         addTweet(d, area, side);
     }
+    rendered[side] = true
+  
 }
 
 function addTweet(tweet, area, side){      
