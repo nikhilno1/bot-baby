@@ -19,6 +19,34 @@ function sleep(milliseconds) {
   } while (currentDate - date < milliseconds);
 }
 
+function fetchRetry(url, delay, limit, fetchOptions = {}) {
+  return new Promise((resolve,reject) => {
+      function success(response) {
+          resolve(response);
+      }
+      function failure(error){
+          limit--;
+          if(limit){
+              setTimeout(fetchUrl,delay)
+          }
+          else {
+              // this time it failed for real
+              reject(error);
+          }
+      }
+      function finalHandler(finalError){
+          throw finalError;
+      }
+      function fetchUrl() {
+          return fetch(url,fetchOptions)
+              .then(success)
+              .catch(failure)
+              .catch(finalHandler);
+      }
+      fetchUrl();
+  });
+}
+
 button.addEventListener('click', () => {
     if (prompt_.value.length == 0){ 
         alert("Your text prompt is empty! Please trigger the model with at least one word.");
@@ -30,34 +58,28 @@ button.addEventListener('click', () => {
 
     button.disabled = true;   
     button.textContent = "Fetching";
+
+    clearDataFromUI()
     
-    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=left`, {
+    var models = ["left", "right"];
+    models.forEach(function(model) {
+      //console.log("Calling API for " + model);
+      fetchRetry(`${API_ENDPOINT}?prompt=${prompt}&model=${model}`, 10000,6, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
 
-    }).then((response) =>{
-        return response.json()
-    }).then((data) => {
-        return JSON.parse(data);
-    }).then((data) => {        
-        //add_headline_image();
-        addDataToUI(data, 'left');
-        button.disabled = false;
-        button.textContent = 'Generate'
-    });    
-
-    fetch(`${API_ENDPOINT}?prompt=${prompt}&model=right`, {
-      method: 'GET',
-      headers: { 'content-type': 'application/json' },
-
-    }).then((response) => {
-      return response.json()
-    }).then((data) => {
-      return JSON.parse(data);
-    }).then((data) => {
-      addDataToUI(data, 'right');
-      button.disabled = false;
-      button.textContent = 'Generate'
+      }).then((response) =>{
+          return response.json()
+      }).then((data) => {
+          return JSON.parse(data);
+      }).then((data) => {        
+          //add_headline_image();
+          addDataToUI(data, model);
+          button.disabled = false;
+          button.textContent = 'Generate'
+      }).catch(function(error){
+          console.log(error);
+      });;
     });
 });
 
@@ -67,6 +89,16 @@ function truncatePrompt(prompt) {
     index = prompt.lastIndexOf(" ")
     return prompt.substring(0, index)
 }
+
+function clearDataFromUI(data, side){    
+  let area = null;
+  
+  area = tweetArea.childNodes[1];
+  area.innerHTML = "";
+  area = tweetArea.childNodes[3];  
+  area.innerHTML = "";
+}
+
 
 function addDataToUI(data, side){    
     let area = null;
