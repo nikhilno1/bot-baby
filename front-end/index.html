@@ -15,7 +15,10 @@
         <div class="form-area">            
             <textarea class = "border-solid border-2 border-blue-500 py-1 my-2" rows="2" cols="60" id="prompt" maxlength="100" placeholder="Enter a few words and let the BOT complete the rest of the tweet" required></textarea>
         </div>
-            <button id="get_tweets" class="w3-button w3-blue w3-round">Generate</button>    
+            <button id="get_tweets" class="w3-button w3-blue w3-round">Generate</button>
+        </br>
+        </br>
+        <span id="in-progress"></span>
     </main>    
     <div id="x"></div>
     <section id = "tweet-area">
@@ -28,7 +31,21 @@
         </div>
     </div>
     <div class='footer' align="center">
-        <a href="https://github.com/nikhilno1/bot-baby">Code on GitHub</a>  | For feedback/comments 
+        <!-- Trigger/Open The Modal -->
+        <button id="aboutBtn" class="w3-button" >About</button>
+        <!-- The Modal -->
+        <div id="aboutModal" class="modal">
+            <!-- Modal content -->
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p> <font size="+2">The purpose of this app is to highlight the stark polarisation <br> 
+                    and constantly worsening social media discourse that we witness everyday. <br> <br>
+                    It's a grim reminder that if we don't arrest this fall then this is how our children will learn to speak. </font></p>
+            </div>
+        </div>
+        <br>
+        <button id="gitBtn" class="w3-button" >Code on GitHub</button>
+        <br>For feedback/comments: 
         <a href="https://twitter.com/intent/tweet?screen_name=NikhilUtane&ref_src=twsrc%5Etfw" class="twitter-mention-button" data-show-count="false">Tweet to @NikhilUtane</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
         <br><br>
     </div>
