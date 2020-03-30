@@ -64,7 +64,8 @@ button.addEventListener('click', () => {
     button.style.backgroundColor = "#ffc477"
     button.textContent = "Running";    
     
-    document.getElementById("in-progress").textContent = "Hold on, babies are sleeping. Waking them up. This can take upto a minute so be patient..."
+    document.getElementById('in-progress').innerHTML = "Hold on, Waking up the babies. This can take upto a minute so be patient.<br>\
+                                                        If it has taken longer then refresh the page and enter the same prompt again."
     clearDataFromUI()
     showSpinner()
     var models = ["left", "right"];
