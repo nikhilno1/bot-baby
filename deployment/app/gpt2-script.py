@@ -117,7 +117,7 @@ def main():
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
         table = dynamodb.Table('gpt2-tweets-' + args.model)
         json_text = json.dumps(proc_tweets_list)
-        logging.info('[%s]: Adding to DynamoDB ID: [%s], model: [%s]', pid, args.prompt.lower(), args.model)
+        logging.info('[%s]: Adding to DynamoDB, prompt: [%s], model: [%s]', pid, args.prompt.lower(), args.model)
         print
         table.put_item(
             Item={

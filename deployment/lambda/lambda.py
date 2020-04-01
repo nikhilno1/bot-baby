@@ -96,14 +96,18 @@ def lambda_handler(event, context):
     
     #dynamoid = random.randint(1, 1000000)
     prompt_url = urllib.parse.quote(prompt)
+    if model == "left":
+        port = 8081
+    else:
+        port = 8082
     
     commands = ["cd /home/ubuntu",
                 "shutdown -h +15",
                 "sudo -i -u ubuntu bash <<-EOF",
                 "source ~/.bashrc",
                 "source env/bin/activate",
-                #f"curl --location --request GET 'http://127.0.0.1:8080?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
-                f"python3 gpt2-script.py --model=\"{model}\" --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
+                f"curl --location --request GET 'http://127.0.0.1:{port}?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
+                #f"python3 gpt2-script.py --model=\"{model}\" --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
     
     print(commands)
     execute_commands_on_linux_instances(ssm_client, commands, [INSTANCE_ID])

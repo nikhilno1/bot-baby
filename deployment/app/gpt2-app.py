@@ -21,14 +21,16 @@ script_path = os.path.dirname(os.path.abspath( __file__ ))
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s',
-                    filename=script_path+'/inference.log',
+                    filename='/tmp/inference.log',
                     filemode='a')
 
 logging.info('Starting gpt2 session')
 
-
+model = os.environ.get('MODEL', 'left')
+print("Got model = " + model)
+checkpoint_path = script_path + "/model/" + model+ "/checkpoint/"
 sess = gpt2.start_tf_sess(threads=1)
-gpt2.load_gpt2(sess, checkpoint_dir=script_path + "/checkpoint/")
+gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_path)
 
 # Needed to avoid cross-domain issues
 response_header = {
@@ -36,7 +38,6 @@ response_header = {
 }
 
 generate_count = 0
-
 
 @app.route('/', methods=['GET', 'POST', 'HEAD'])
 async def homepage(request):
@@ -57,24 +58,21 @@ async def homepage(request):
     if prompt is None:
         prompt = "<|startoftext|>"
 
-    logging.info('Generating text for [%s]', prompt)
+    logging.info('Generating text for [%s], model: [%s]', prompt, model)
 
-    unproc_tweets_list = gpt2.generate(sess, checkpoint_dir=script_path + "/checkpoint/",
-                             length=int(params.get('length', 60)),
-                             nsamples=int(params.get('num_samples', 3)),
-                             temperature=float(params.get('temperature', 1.0)),
-                             top_k=int(params.get('top_k', 0)),
+    unproc_tweets_list = gpt2.generate(sess, checkpoint_dir=checkpoint_path,
+                             length=int(params.get('length', 80)),
+                             nsamples=int(params.get('num_samples', 20)),
+                             temperature=float(params.get('temperature', 0.7)),
+                             top_k=int(params.get('top_k', 40)),
                              top_p=float(params.get('top_p', 0.9)),
                              prefix=prompt,
                              truncate=params.get('truncate', "<|endoftext|>"),
                              include_prefix=str(params.get(
                                  'include_prefix', True)).lower() == 'true',
-                             batch_size=int(params.get('batch_size', 3)),
+                             batch_size=int(params.get('batch_size', 20)),
                              return_as_list=True
                          )
-    logging.info("======1=======")
-    logging.info(unproc_tweets_list)
-    
     proc_tweets_list = []
     deleted_list = []
 
@@ -94,17 +92,18 @@ async def homepage(request):
         else:
             deleted_list.append(t)
 
-    logging.info("======2=======")
-    logging.info(proc_tweets_list)
-    logging.info("======3=======")
-    logging.info(deleted_list)
-    logging.info("==============")
+    #logging.info("======2=======")
+    #logging.info(proc_tweets_list)
+    #logging.info("======3=======")
+    #logging.info(deleted_list)
+    #logging.info("==============")
+    logging.info("Generated %d tweets", len(proc_tweets_list))
 
     if len(proc_tweets_list) > 0:
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
-        table = dynamodb.Table('gpt2-tweets-right')
+        table = dynamodb.Table('gpt2-tweets-' + model)
         json_text = json.dumps(proc_tweets_list)
-        logging.info('Adding to DynamoDB ID: %s, tweet: %s', prompt.lower(), json_text)
+        logging.info('Adding to DynamoDB DB, prompt: [%s], model: %s', prompt.lower(), model)
         print
         table.put_item(
             Item={
@@ -128,3 +127,4 @@ async def homepage(request):
 
 if __name__ == '__main__':
     uvicorn.run(app, host='127.0.0.1', port=int(os.environ.get('PORT', 8080)))
+

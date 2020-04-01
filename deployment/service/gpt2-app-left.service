@@ -1,0 +1,18 @@
+[Unit]
+Description=gpt2-app-left
+After=network.target network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Restart=always
+Environment=LD_LIBRARY_PATH=/home/ubuntu/src/cntk/bindings/python/cntk/libs:/usr/local/cuda/lib64:/usr/local/lib:/usr/lib:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/efa/lib:/usr/local/cuda/lib:/opt/amazon/efa/lib:/usr/local/mpi/lib:
+Environment=MODEL=left
+Environment=PORT=8081
+ExecStartPre=/bin/mkdir -p /home/ubuntu/var/run/gpt2-app
+PIDFile=/home/ubuntu/var/run/gpt2-app/service-left.pid
+ExecStart=/home/ubuntu/env/bin/python /home/ubuntu/gpt2-app.py
+
+[Install]
+WantedBy=multi-user.target
+
