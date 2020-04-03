@@ -8,11 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="style.css">    
+    <link rel="stylesheet" href="styles/autocomplete.css">
 </head>
 <body>    
     <img src="images/bot_baby_logo_2.png" alt="BOT Baby Heading" width="300" height="400">  
     <main class = "my-3 mx-5">
-        <div class="form-area">            
+        <div class="form-area autocomplete">            
             <textarea class = "border-solid border-2 border-blue-500 py-1 my-2" rows="2" cols="60" id="prompt" maxlength="100" placeholder="Enter a few words and let the BOT complete the rest of the tweet" required></textarea>
         </div>
             <button id="get_tweets" class="w3-button w3-blue w3-round">Generate</button>
@@ -50,4 +51,5 @@
         <br><br>
     </div>
     <script src="twitter.js"></script>
+    <script src="scripts/autocomplete.js"></script>
 </body>
