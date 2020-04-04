@@ -4,9 +4,8 @@
 fetch('../files/prompts.txt', {mode: 'no-cors'})
 .then(response => response.text())
 .then((data) => {    
-    var textByLine = String(data).split("\n")    
-    autocomplete(document.getElementById("prompt"), textByLine);
-    
+    var textByLine = String(data).split("\n")        
+    autocomplete(document.getElementById("prompt"), textByLine);    
 }).catch(error => console.error(error));
 
 function autocomplete(inp, arr) {
@@ -14,7 +13,6 @@ function autocomplete(inp, arr) {
     the text field element and an array of possible autocompleted values:*/
     var currentFocus;
     /*execute a function when someone writes in the text field:*/
-    console.log("Inside autocomplete")
     inp.addEventListener("input", function(e) {
         var a, b, i, val = this.value;
         /*close any already open lists of autocompleted values*/
@@ -52,8 +50,7 @@ function autocomplete(inp, arr) {
     });
 
     /*execute a function presses a key on the keyboard:*/
-    inp.addEventListener("keydown", function(e) {
-        console.log("Inside addEventListener")
+    inp.addEventListener("keydown", function(e) {        
         var x = document.getElementById(this.id + "autocomplete-list");
         if (x) x = x.getElementsByTagName("div");
         if (e.keyCode == 40) {
@@ -80,7 +77,6 @@ function autocomplete(inp, arr) {
 
     function addActive(x) {
         /*a function to classify an item as "active":*/
-        console.log("Inside addActive")
         if (!x) return false;
         /*start by removing the "active" class on all items:*/
         removeActive(x);
@@ -114,3 +110,8 @@ function autocomplete(inp, arr) {
     });
 
 }
+
+
+
+/*initiate the autocomplete function on the "myInput" element, and pass along the countries array as possible autocomplete values:*/
+//autocomplete(document.getElementById("prompt"), countries);

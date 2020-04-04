@@ -134,7 +134,7 @@ function addDataToUI(data, side){
         addTweet(d, area, side);
     }
     rendered[side] = true  
-    console.log("Rendered true for " + side)
+    //console.log("Rendered true for " + side)
 }
 
 function addTweet(tweet, area, side){      
