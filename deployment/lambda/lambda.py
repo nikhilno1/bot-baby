@@ -10,6 +10,21 @@ ec2_resource = boto3.resource("ec2", region_name=REGION)
 dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
 ssm_client = boto3.client('ssm', region_name=REGION)
 
+# Create SQS client
+sqs = boto3.client('sqs')
+queue_url = 'https://sqs.ap-south-1.amazonaws.com/666268854852/gpt2-inference.fifo'
+
+def send_sqs_message(msg_attr, msg_body):
+    # Send message to SQS queue
+    response = sqs.send_message(
+        QueueUrl=queue_url,
+        MessageGroupId="gpt2-inference",
+        MessageAttributes=msg_attr,
+        MessageBody=(msg_body)
+    )
+    
+    print(response['MessageId'])
+
 def execute_commands_on_linux_instances(client, commands, instance_ids):
     """Runs commands on remote linux instances
     :param client: a boto/boto3 ssm client
@@ -54,22 +69,6 @@ def lambda_handler(event, context):
         prompt = "The"
     prompt_lcase = prompt.lower()
     
-    #samples = int(event["queryStringParameters"]["num_samples"])
-    samples = 20
-    
-    #words = int(event["queryStringParameters"]["length"])
-    words = 80
-    #temperature = float(event["queryStringParameters"]["temperature"])
-    temperature = 0.7
-    
-    #nucleus = float(event["queryStringParameters"]["top_p"])
-    nucleus = 0.9
-    
-    #topn = int(event["queryStringParameters"]["top_k"])
-    topn = 40
-    
-    batch_size = 20
-    
     # Check if the prompt is already present in the DynamodDB
     table = dynamo_resource.Table('gpt2-tweets-' + model)
     timeout = time.time() + 10   # 10 second from now
@@ -85,6 +84,64 @@ def lambda_handler(event, context):
         return format_response(resp['Items'][0]['text'], 200)
     
     
+    prompt_url = urllib.parse.quote(prompt)
+    port = 8081 if model == "left" else 8082
+    
+    #samples = int(event["queryStringParameters"]["num_samples"])
+    samples = 20
+    
+    #words = int(event["queryStringParameters"]["length"])
+    words = 80
+    
+    #temperature = float(event["queryStringParameters"]["temperature"])
+    temperature = 0.7
+    
+    #nucleus = float(event["queryStringParameters"]["top_p"])
+    nucleus = 0.9
+    
+    #topn = int(event["queryStringParameters"]["top_k"])
+    topn = 40
+    
+    batch_size = 20
+    
+    msg_attr = {
+                    'model': {
+                        'DataType': 'String',
+                        'StringValue': model
+                    },
+                    'prompt': {
+                        'DataType': 'String',
+                        'StringValue': prompt_url
+                    },
+                    'num_samples': {
+                        'DataType': 'Number',
+                        'StringValue': str(samples)
+                    },
+                    'batch_size': {
+                        'DataType': 'Number',
+                        'StringValue': str(batch_size)
+                    },
+                    'length': {
+                        'DataType': 'Number',
+                        'StringValue': str(words)
+                    },
+                    'temperature': {
+                        'DataType': 'Number',
+                        'StringValue': str(temperature)
+                    },
+                    'top_p': {
+                        'DataType': 'Number',
+                        'StringValue': str(nucleus)
+                    },
+                    'top_k': {
+                        'DataType': 'Number',
+                        'StringValue': str(topn)
+                    }
+                }
+    
+    msg_body = "Model = " + model + ",Prompt = " + prompt_url    
+    send_sqs_message(msg_attr, msg_body)
+    
     # If not, then run the inference, add to DB and return
     status = ec2_client.describe_instance_status(InstanceIds=[INSTANCE_ID])
     if len(status['InstanceStatuses']) == 0: ec2_client.start_instances(InstanceIds=[INSTANCE_ID])
@@ -95,18 +152,13 @@ def lambda_handler(event, context):
     waiter.wait(InstanceIds=[INSTANCE_ID])
     
     #dynamoid = random.randint(1, 1000000)
-    prompt_url = urllib.parse.quote(prompt)
-    if model == "left":
-        port = 8081
-    else:
-        port = 8082
     
     commands = ["cd /home/ubuntu",
-                "shutdown -h +15",
-                "sudo -i -u ubuntu bash <<-EOF",
-                "source ~/.bashrc",
-                "source env/bin/activate",
-                f"curl --location --request GET 'http://127.0.0.1:{port}?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
+                "shutdown -h +15"]
+                #"sudo -i -u ubuntu bash <<-EOF",
+                #"source ~/.bashrc",
+                #"source env/bin/activate",
+                #f"curl --location --request GET 'http://127.0.0.1:{port}?prompt={prompt_url}&num_samples={samples}&batch_size={batch_size}&length={words}&temperature={temperature}&top_p={nucleus}&top_k={topn}' --header 'Content-Type: application/json'"]
                 #f"python3 gpt2-script.py --model=\"{model}\" --prompt=\"{prompt}\" --num_samples={samples} --batch_size={batch_size} --length={words} --temperature={temperature} --top_p={nucleus} --top_k={topn}"]
     
     print(commands)
