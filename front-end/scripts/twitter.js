@@ -75,8 +75,7 @@ button.addEventListener('click', () => {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
       }).then(response => response.json())      
-      .then((data) => {        
-          console.log("DATA 2 PARSED" + data)
+      .then((data) => {          
           //add_headline_image();
           addDataToUI(data, model);
           if(rendered['left'] && rendered['right']) {

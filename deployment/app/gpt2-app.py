@@ -15,6 +15,17 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from pathlib import Path
 from urllib.parse import unquote
+from datetime import datetime
+import decimal
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if abs(o) % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
 
 app = Starlette(debug=False)
 
@@ -66,7 +77,6 @@ def get_sentiment(all_tweets):
     top_sentiment_list_s, max_score_list_s, tweets_list_s = map(list, zip(*sorted(zip(senti_s[:10], max_s[:10], tweets_s[:10]), reverse=True)))
     return tweets_list_s, top_sentiment_list_s, max_score_list_s
 
-
 @app.route('/', methods=['GET', 'POST', 'HEAD'])
 async def homepage(request):
     global generate_count
@@ -85,7 +95,6 @@ async def homepage(request):
     prompt=(params.get('prompt', ''))
     if prompt is None:
         prompt = "<|startoftext|>"
-
     logging.info('Generating text for [%s], model: [%s]', prompt, model)
 
     unproc_tweets_list = gpt2.generate(sess, checkpoint_dir=checkpoint_path,
@@ -136,6 +145,7 @@ async def homepage(request):
         json_text = json.dumps(tweets_list)
         json_sentiment = json.dumps(sentiment_list)
         json_score = json.dumps(score_list)
+        timestamp = datetime.now().isoformat()
         logging.info('Adding to DynamoDB DB, prompt: [%s], model: %s', prompt.lower(), model)
         print
         table.put_item(
@@ -144,9 +154,16 @@ async def homepage(request):
                 'text' : json_text,
                 'orig_prompt' : prompt,
                 'sentiment' : json_sentiment,
-                'score' : json_score
+                'score' : json_score,
+                'timestamp': timestamp,
+                'visits': decimal.Decimal(1)
             }
         )
+        # Add all new prompts to a file for auto-completion..but only for 1 model
+        if model == "left":
+            with open("/home/ubuntu/new_prompts.txt", "a") as output:
+                output.write('%s\n' % prompt)
+
     logging.info('Finished executing script')
 
 #    generate_count += 1
