@@ -74,11 +74,9 @@ button.addEventListener('click', () => {
       fetchRetry(`${API_ENDPOINT}?prompt=${prompt}&model=${model}`, 10000,6, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
-      }).then((response) =>{
-          return response.json()
-      }).then((data) => {
-          return JSON.parse(data);
-      }).then((data) => {        
+      }).then(response => response.json())      
+      .then((data) => {        
+          console.log("DATA 2 PARSED" + data)
           //add_headline_image();
           addDataToUI(data, model);
           if(rendered['left'] && rendered['right']) {
@@ -87,7 +85,7 @@ button.addEventListener('click', () => {
             removeSpinner()
           }  
       }).catch(function(error){
-        console.log("Got error for " + model)
+        console.log("Got error for " + model + ". Error: " + error)
       });;
     });
 });
@@ -128,17 +126,17 @@ function addDataToUI(data, side){
       area = tweetArea.childNodes[3];
     }
     area.innerHTML = "";
-    data.sort(() => Math.random() - 0.5);
+    //data.sort(() => Math.random() - 0.5);
     for(i = 0; i < data.length; i++){
         d = data[i];
-        addTweet(d, area, side);
+        addTweet(d['text'], d['sentiment'], area, side);
     }
     rendered[side] = true  
     //console.log("Rendered true for " + side)
 }
 
-function addTweet(tweet, area, side){      
-    const tweet_html = constructTweetHTML(tweet, side);
+function addTweet(tweet, sentiment, area, side){      
+    const tweet_html = constructTweetHTML(tweet, sentiment, side);
     const div =  document.createElement('div');
     div.innerHTML = tweet_html;    
     area.appendChild(div);    
@@ -159,7 +157,7 @@ function show_image(src, width, height, alt) {
   src.appendChild(img);
 }
 
-function constructTweetHTML(tweet, side){
+function constructTweetHTML(tweet, sentiment, side){
     if(side === 'left'){ 
       src= './images/boss-baby-left-1.png'
       username='Left-wing Baby'
@@ -169,7 +167,15 @@ function constructTweetHTML(tweet, side){
       username='Right-wing Baby'
       handle='@RightWingBaby'
     }
-    return `<div id="tweet-ui" class="tweet-body max-w-xl mx-auto my-6">
+    if(sentiment === 'Positive'){
+      bg_color = "#e6ffee"
+    }else if(sentiment === 'Negative'){
+      bg_color = "#ffe6e6"
+    }else{
+      bg_color = "#e6f9ff"
+    }  
+
+    return `<div id="tweet-ui" class="tweet-body max-w-xl mx-auto my-6" style="background-color:${bg_color};">
     <article class="border-t border-b border-gray-400 p-2 hover:bg-gray-100 flex flex-wrap items-start cursor-pointer">
       <img src=${src} class="rounded-full w-12 h-12 mr-3" />
   

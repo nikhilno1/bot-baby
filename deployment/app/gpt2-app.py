@@ -13,7 +13,7 @@ import sys
 import boto3
 import nltk
 from nltk.tokenize import sent_tokenize
-
+from pathlib import Path
 
 app = Starlette(debug=False)
 
@@ -32,12 +32,39 @@ checkpoint_path = script_path + "/model/" + model+ "/checkpoint/"
 sess = gpt2.start_tf_sess(threads=1)
 gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_path)
 
+# Touch the file which the process_sqs waits on
+Path('/tmp/model-loaded-'+model).touch()
+
 # Needed to avoid cross-domain issues
 response_header = {
     'Access-Control-Allow-Origin': '*'
 }
 
 generate_count = 0
+
+def unique(sequence):
+    seen = set()
+    return [x for x in sequence if not (x in seen or seen.add(x))]
+
+def get_sentiment(all_tweets):
+    comprehend = boto3.client(service_name='comprehend', region_name='ap-south-1')
+    result_list = comprehend.batch_detect_sentiment(TextList=all_tweets, LanguageCode='en')['ResultList']
+    max_score_list = []
+    top_sentiment_list = []
+    for result in result_list:
+        max_key = max(result['SentimentScore'], key=result['SentimentScore'].get)
+        #print(result)
+        #print(result['SentimentScore'][max_key])
+        max_score_list.append(result['SentimentScore'][max_key])
+        top_sentiment_list.append(max_key)
+    #print(max_score_list)
+    #print(top_sentiment_list)
+    #print(json.dumps(result, indent=4))
+    # First sort based on score, keep the top N (for eg. 5), then sort again based on sentiment
+    max_s, senti_s, tweets_s = map(list, zip(*sorted(zip(max_score_list, top_sentiment_list, all_tweets), reverse=True)))
+    top_sentiment_list_s, max_score_list_s, tweets_list_s = map(list, zip(*sorted(zip(senti_s[:10], max_s[:10], tweets_s[:10]), reverse=True)))
+    return tweets_list_s, top_sentiment_list_s, max_score_list_s
+
 
 @app.route('/', methods=['GET', 'POST', 'HEAD'])
 async def homepage(request):
@@ -84,7 +111,7 @@ async def homepage(request):
         # Break the text into sentences and remove the last sentence which is most likely to be incomplete
         t_list = sent_tokenize(t)
         del t_list[-1]
-        t = ' '.join(t_list)
+        t = ' '.join(unique(t_list))
 
         # Some tweets have repeated words. Remove the ones below a threshold. 
         if len(set(t.split())) > 20:
@@ -100,15 +127,23 @@ async def homepage(request):
     logging.info("Generated %d tweets", len(proc_tweets_list))
 
     if len(proc_tweets_list) > 0:
+        # Find the sentiment of the tweets using AWS comprehend 
+        tweets_list, sentiment_list, score_list = get_sentiment(proc_tweets_list)
+
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
         table = dynamodb.Table('gpt2-tweets-' + model)
-        json_text = json.dumps(proc_tweets_list)
+        json_text = json.dumps(tweets_list)
+        json_sentiment = json.dumps(sentiment_list)
+        json_score = json.dumps(score_list)
         logging.info('Adding to DynamoDB DB, prompt: [%s], model: %s', prompt.lower(), model)
         print
         table.put_item(
             Item={
                 'prompt' : prompt.lower(),
-                'text' : json_text
+                'text' : json_text,
+                'orig_prompt' : prompt,
+                'sentiment' : json_sentiment,
+                'score' : json_score
             }
         )
     logging.info('Finished executing script')
@@ -127,4 +162,3 @@ async def homepage(request):
 
 if __name__ == '__main__':
     uvicorn.run(app, host='127.0.0.1', port=int(os.environ.get('PORT', 8080)))
-
