@@ -14,6 +14,7 @@ import boto3
 import nltk
 from nltk.tokenize import sent_tokenize
 from pathlib import Path
+from urllib.parse import unquote
 
 app = Starlette(debug=False)
 
@@ -81,7 +82,7 @@ async def homepage(request):
                              headers=response_header)
 
     #prompt=params.get('prompt', '')[:100]
-    prompt=params.get('prompt', '')
+    prompt=(params.get('prompt', ''))
     if prompt is None:
         prompt = "<|startoftext|>"
 

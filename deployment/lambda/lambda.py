@@ -40,10 +40,11 @@ def execute_commands_on_linux_instances(client, commands, instance_ids):
     )
     return resp
 
-def format_response(message, status_code):
+def format_response(resp, status_code):
+    dictionary = [{"text": t, "sentiment": s} for t, s in zip(json.loads(resp['text']), json.loads(resp['sentiment']))]
     return {
         "statusCode": str(status_code),
-        "body": json.dumps(message),
+        "body": json.dumps(dictionary),
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
@@ -81,17 +82,18 @@ def lambda_handler(event, context):
     if len(resp['Items'])>0:
         print("The query returned the following existing items:")
         print(resp['Items'])
-        return format_response(resp['Items'][0]['text'], 200)
+        return format_response(resp['Items'][0], 200)
     
     
-    prompt_url = urllib.parse.quote(prompt)
+    # Add a space at the end to end the prompt on whole words
+    prompt_url = urllib.parse.quote(prompt) 
     port = 8081 if model == "left" else 8082
     
     #samples = int(event["queryStringParameters"]["num_samples"])
     samples = 20
     
     #words = int(event["queryStringParameters"]["length"])
-    words = 80
+    words = 60
     
     #temperature = float(event["queryStringParameters"]["temperature"])
     temperature = 0.7
@@ -138,8 +140,10 @@ def lambda_handler(event, context):
                         'StringValue': str(topn)
                     }
                 }
-    
-    msg_body = "Model = " + model + ",Prompt = " + prompt_url    
+    # Add a random number to get around queue de-deplication
+    #rand_num = random.randint(1, 1000000)
+    rand_num = 5
+    msg_body = "Model = " + model + ",Prompt = " + prompt_url + ",rand = " + str(rand_num)
     send_sqs_message(msg_attr, msg_body)
     
     # If not, then run the inference, add to DB and return
@@ -174,4 +178,4 @@ def lambda_handler(event, context):
     print("The query returned the following items:")
     print(resp['Items'])
     
-    return format_response(resp['Items'][0]['text'], 200)
+    return format_response(resp['Items'][0], 200)
