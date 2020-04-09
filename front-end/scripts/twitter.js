@@ -25,6 +25,11 @@ function sleep(milliseconds) {
   } while (currentDate - date < milliseconds);
 }
 
+function resetPage() {
+  button.disabled = false;
+  button.textContent = 'Generate'          
+  removeSpinner()
+}
 function fetchRetry(url, delay, limit, fetchOptions = {}) {
   return new Promise((resolve,reject) => {
       function success(response) {
@@ -64,27 +69,41 @@ button.addEventListener('click', () => {
     button.style.backgroundColor = "#ffc477"
     button.textContent = "Running";    
     
+    document.getElementById("in-progress").style.color = "black";
     document.getElementById('in-progress').innerHTML = "Hold on, Waking up the babies. This can take upto a minute so be patient.<br>\
                                                         If it has taken longer then refresh the page and enter the same prompt again."
+      
     clearDataFromUI()
     showSpinner()
     var models = ["left", "right"];
 
     models.forEach(function(model) {   
-      fetchRetry(`${API_ENDPOINT}?prompt=${prompt}&model=${model}`, 10000,6, {
+      fetchRetry(`${API_ENDPOINT}?prompt=${prompt}&model=${model}`, 10000,5, {
         method: 'GET',
         headers: { 'content-type': 'application/json' },
-      }).then(response => response.json())      
-      .then((data) => {          
-          //add_headline_image();
+      }).then((response) => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Something went wrong');
+        }
+      }).then((data) => {          
+          //add_headline_image();          
           addDataToUI(data, model);
           if(rendered['left'] && rendered['right']) {
-            button.disabled = false;
-            button.textContent = 'Generate'          
-            removeSpinner()
+            resetPage()
+            //button.disabled = false;
+            //button.textContent = 'Generate'          
+            //removeSpinner()
           }  
       }).catch(function(error){
         console.log("Got error for " + model + ". Error: " + error)
+        resetPage()
+        document.getElementById("in-progress").textContent = "503: Service Unavailable. Try again later or use an existing prompt from the list."
+        document.getElementById("in-progress").style.color = "red";        
+        //button.disabled = false;
+        //button.textContent = 'Generate'          
+        //removeSpinner()
       });;
     });
 });

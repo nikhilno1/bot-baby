@@ -1,14 +1,17 @@
 import json, boto3, random, time
 import urllib.parse
 from boto3.dynamodb.conditions import Key
+from collections import Counter
+import ast
 
 REGION = "ap-south-1"
-#INSTANCE_ID = 'i-0bbb4030d18a38d36'
-INSTANCE_ID = "i-02719d429a8908ae6"
+INSTANCE_ID = 'i-0bd9ff717205bb43e' #AZ: ap-south-1b
+#INSTANCE_ID = "i-02719d429a8908ae6" #AZ: ap-south-1c
 ec2_client = boto3.client("ec2", region_name=REGION)
 ec2_resource = boto3.resource("ec2", region_name=REGION)
 dynamo_resource = boto3.resource('dynamodb', region_name=REGION)
 ssm_client = boto3.client('ssm', region_name=REGION)
+dynamodb = boto3.client('dynamodb')
 
 # Create SQS client
 sqs = boto3.client('sqs')
@@ -40,11 +43,31 @@ def execute_commands_on_linux_instances(client, commands, instance_ids):
     )
     return resp
 
+def get_majority_view(text, sentiment):
+    c = Counter(sentiment)
+    value, count = c.most_common()[0]
+    #print(value, count)
+
+    text_m = []
+    sentiment_m = []
+    for t, s in zip(text, sentiment):
+        if s == value:
+            text_m.append(t)
+            sentiment_m.append(s)
+    #print(text_m)
+    #print(sentiment_m)
+    return text_m, sentiment_m
+
 def format_response(resp, status_code):
-    dictionary = [{"text": t, "sentiment": s} for t, s in zip(json.loads(resp['text']), json.loads(resp['sentiment']))]
+    if status_code == 200:
+        # Return the majority view of the tweets
+        text_l, sentiment_l = get_majority_view(ast.literal_eval(resp['text']), ast.literal_eval(resp['sentiment']))
+        message = [{"text": t, "sentiment": s} for t, s in zip(text_l, sentiment_l)]
+    else:
+        message = resp
     return {
         "statusCode": str(status_code),
-        "body": json.dumps(dictionary),
+        "body": json.dumps(message),
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
@@ -82,6 +105,18 @@ def lambda_handler(event, context):
     if len(resp['Items'])>0:
         print("The query returned the following existing items:")
         print(resp['Items'])
+        #Increment the visits counter        
+        dynamodb.update_item(
+            TableName='gpt2-tweets-' + model, 
+            Key={
+                'prompt':{'S': prompt_lcase}
+            },
+            UpdateExpression='SET visits = visits + :inc',
+            ExpressionAttributeValues={
+                ':inc': {'N': '1'}
+            },
+            ReturnValues="NONE"
+        )
         return format_response(resp['Items'][0], 200)
     
     
@@ -142,13 +177,13 @@ def lambda_handler(event, context):
                 }
     # Add a random number to get around queue de-deplication
     #rand_num = random.randint(1, 1000000)
-    rand_num = 5
+    rand_num = 7
     msg_body = "Model = " + model + ",Prompt = " + prompt_url + ",rand = " + str(rand_num)
     send_sqs_message(msg_attr, msg_body)
     
     # If not, then run the inference, add to DB and return
     status = ec2_client.describe_instance_status(InstanceIds=[INSTANCE_ID])
-    if len(status['InstanceStatuses']) == 0: ec2_client.start_instances(InstanceIds=[INSTANCE_ID])
+    if len(status['InstanceStatuses']) == 0: ec2_client.start_instances(InstanceIds=[INSTANCE_ID])        
     
     instance = ec2_resource.Instance(INSTANCE_ID)
     instance.wait_until_running()
