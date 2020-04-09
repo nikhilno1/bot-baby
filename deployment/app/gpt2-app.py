@@ -44,7 +44,7 @@ checkpoint_path = script_path + "/model/" + model+ "/checkpoint/"
 sess = gpt2.start_tf_sess(threads=1)
 gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_path)
 
-# Touch the file which the process_sqs waits on
+# Touch the file which the process_queue waits on
 Path('/tmp/model-loaded-'+model).touch()
 
 # Needed to avoid cross-domain issues
@@ -159,10 +159,6 @@ async def homepage(request):
                 'visits': decimal.Decimal(1)
             }
         )
-        # Add all new prompts to a file for auto-completion..but only for 1 model
-        if model == "left":
-            with open("/home/ubuntu/new_prompts.txt", "a") as output:
-                output.write('%s\n' % prompt)
 
     logging.info('Finished executing script')
 

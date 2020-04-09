@@ -1,0 +1,13 @@
+[Unit]
+Description=runs only upon shutdown
+Conflicts=reboot.target
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/bin/bash /home/ubuntu/shutdown_script.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
