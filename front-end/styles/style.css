@@ -99,29 +99,65 @@ img {
     overflow: auto; /* Enable scroll if needed */
     background-color: rgb(0,0,0); /* Fallback color */
     background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-  }
+}
   
   /* Modal Content */
-  .modal-content {
+.modal-content {
     background-color: #fefefe;
     margin: auto;
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
-  }
+}
   
   /* The Close Button */
-  .close {
+.close {
     color: #aaaaaa;
     float: right;
     font-size: 28px;
     font-weight: bold;
-  }
+}
   
-  .close:hover,
-  .close:focus {
+.close:hover,
+.close:focus {
     color: #000;
     text-decoration: none;
     cursor: pointer;
-  }
+}
   
+.label {
+    color: white;
+    padding: 8px;
+    font-family: Lato;
+    width: 60;
+}
+.positive {background-color: #e6ffee; color: black;} /* Green */
+.neutral {background-color: #e6f9ff; color: black;} /* Blue */  
+.negative {background-color: #ffe6e6; color: black;} /* Red */ 
+.other {background-color: #e7e7e7; color: black;} /* Gray */ 
+  
+.tab { 
+  display:inline-block; 
+  margin-left: 10px; 
+}
+
+/* Dashed border */
+hr.dashed {
+  border-top: 3px dashed #bbb;
+}
+
+/* Dotted border */
+hr.dotted {
+  border-top: 3px dotted #bbb;
+}
+
+/* Solid border */
+hr.solid {
+  border-top: 3px solid #bbb;
+}
+
+/* Rounded border */
+hr.rounded {
+  border-top: 8px solid #bbb;
+  border-radius: 5px;
+}

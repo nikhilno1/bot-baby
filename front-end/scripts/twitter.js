@@ -4,6 +4,8 @@ const button = document.querySelector('#get_tweets');
 const tweetArea = document.querySelector('#tweet-area')
 const overlay = document.querySelector('.bg-overlay')
 const overlayContent = document.querySelector('.overlay-content')
+const labelArea = document.getElementById("color-labels");
+
 const rendered = {
   'left': false,
   'right':false
@@ -28,7 +30,7 @@ function sleep(milliseconds) {
 function resetPage() {
   button.disabled = false;
   button.textContent = 'Generate'          
-  removeSpinner()
+  removeSpinner()  
 }
 function fetchRetry(url, delay, limit, fetchOptions = {}) {
   return new Promise((resolve,reject) => {
@@ -70,7 +72,7 @@ button.addEventListener('click', () => {
     button.textContent = "Running";    
     
     document.getElementById("in-progress").style.color = "black";
-    document.getElementById('in-progress').innerHTML = "Hold on, Waking up the babies. This can take upto a minute so be patient.<br>\
+    document.getElementById('in-progress').innerHTML = "Hold on, waking up the babies. This can take upto a minute so be patient.<br>\
                                                         If it has taken longer then refresh the page and enter the same prompt again."
       
     clearDataFromUI()
@@ -132,6 +134,7 @@ function clearDataFromUI(data, side){
   area.innerHTML = "";
   area = tweetArea.childNodes[3];  
   area.innerHTML = "";
+  labelArea.style.display = "none";
 }
 
 function addDataToUI(data, side){    
@@ -149,7 +152,8 @@ function addDataToUI(data, side){
         d = data[i];
         addTweet(d['text'], d['sentiment'], area, side);
     }
-    rendered[side] = true  
+    rendered[side] = true
+    labelArea.style.display = "block";
     //console.log("Rendered true for " + side)
 }
 
@@ -287,3 +291,5 @@ var btn = document.getElementById("gitBtn");
 btn.onclick = function() {
   window.open("https://github.com/nikhilno1/bot-baby");
 }
+
+labelArea.style.display = "none";
