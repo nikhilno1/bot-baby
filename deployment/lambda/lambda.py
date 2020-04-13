@@ -1,3 +1,9 @@
+# Receive HTTP requests from API gateway
+# If existing prompt then read from DynamoDB and return
+# If new prompt, then push it to SQS queue and read from DynamoDB when available
+
+# Base code borrowed from https://github.com/gabrielelanaro/ml-prototypes/blob/master/prototypes/styletransfer/huggingface/hugging_lambda.py
+
 import json, boto3, random, time
 import urllib.parse
 from boto3.dynamodb.conditions import Key
@@ -43,19 +49,18 @@ def execute_commands_on_linux_instances(client, commands, instance_ids):
     )
     return resp
 
+# Return the majority class (i.e. Positive, Negative or Neutral)
 def get_majority_view(text, sentiment):
+    # First get the majority class and return only those elements
     c = Counter(sentiment)
-    value, count = c.most_common()[0]
-    #print(value, count)
+    value, count = c.most_common()[0]    
 
     text_m = []
     sentiment_m = []
     for t, s in zip(text, sentiment):
         if s == value:
             text_m.append(t)
-            sentiment_m.append(s)
-    #print(text_m)
-    #print(sentiment_m)
+            sentiment_m.append(s)    
     return text_m, sentiment_m
 
 def format_response(resp, status_code):
@@ -118,27 +123,22 @@ def lambda_handler(event, context):
             ReturnValues="NONE"
         )
         return format_response(resp['Items'][0], 200)
-    
-    
-    # Add a space at the end to end the prompt on whole words
+
+    # Encode in URL format. i.e. replace ' ' with %20
     prompt_url = urllib.parse.quote(prompt) 
     port = 8081 if model == "left" else 8082
     
+    # We don't need to expose these via API so default to sensible values
     #samples = int(event["queryStringParameters"]["num_samples"])
-    samples = 20
-    
+    samples = 20    
     #words = int(event["queryStringParameters"]["length"])
-    words = 60
-    
+    words = 60    
     #temperature = float(event["queryStringParameters"]["temperature"])
-    temperature = 0.7
-    
+    temperature = 0.7    
     #nucleus = float(event["queryStringParameters"]["top_p"])
-    nucleus = 0.9
-    
+    nucleus = 0.9    
     #topn = int(event["queryStringParameters"]["top_k"])
-    topn = 40
-    
+    topn = 40    
     batch_size = 20
     
     msg_attr = {
@@ -175,7 +175,7 @@ def lambda_handler(event, context):
                         'StringValue': str(topn)
                     }
                 }
-    # Add a random number to get around queue de-deplication
+    # Add a random number to get around queue de-deplication technique of SQS FIFO queue while testing
     #rand_num = random.randint(1, 1000000)
     rand_num = 7
     msg_body = "Model = " + model + ",Prompt = " + prompt_url + ",rand = " + str(rand_num)
@@ -190,7 +190,8 @@ def lambda_handler(event, context):
     waiter = ec2_client.get_waiter('instance_status_ok')
     waiter.wait(InstanceIds=[INSTANCE_ID])
     
-    #dynamoid = random.randint(1, 1000000)
+    # Earlier lambda was directly invoking the inferencing script but now it sends messages to SQS queue 
+    # which the process_queue reads
     
     commands = ["cd /home/ubuntu",
                 "shutdown -h +15"]
