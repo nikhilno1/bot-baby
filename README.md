@@ -1,5 +1,5 @@
-# BOT Baby
-A tweet generator app that is trained on left-wing and right-wing Indian twitter. User needs to provide an initial prompt after which the app completes the rest of the tweet for the two sides.
+# BOT Baby - A tweet generator app that is trained on left-wing and right-wing Indian twitter.
+User needs to provide an initial prompt after which the app completes the rest of the tweet for the two sides.
 
 Deployed at: http://botbaby.in/
 
