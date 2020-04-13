@@ -47,10 +47,9 @@ I have an API gateway that forwards requests to a lambda function. The lambda fi
 
 6. [shutdown_script.sh](deployment/app/shutdown_script.sh): Script that gets called when instance is shutdown
 7. [update_file_s3.sh](deployment/app/update_file_s3.sh): Download the latest prompts file from S3, update it with new additions and push it back
-8. [lambda.py](deployment/lambda/lambda.py): Lambda function
+8. [lambda.py](deployment/lambda/lambda.py): Lambda function to trigger inferencing when needed else read from DynamoDB
 9. [service/](deployment/service): Systemd service files to launch gpt2-app.py, process_queue.py at startup and shutdown_script.sh during shutdown
 
 ## 4) Front-end
 For twitter UI, I made use of [Let's Build: With Tailwind CSS - Tweet](https://web-crunch.com/posts/lets-build-tailwind-css-tweet). Thank You [Andy Leverenz](https://twitter.com/webcrunchblog) for providing the basic building block. Also thanks to [Manan](https://github.com/manan2002) who enhanced it to make it into side-by-side view along with few other contributions. The website is hosted on S3 (Refer [Hosting a Static Website on Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html)). The website provides auto-completion to the entered prompt to make user select one of the existing prompts. This not only gives a much faster response but also keeps the cost of inferencing down. Finally, the UI displays the tweets that belong to the majority class (Positive, Negative or Neutral) and color-codes them for better visibility.
 
-### Files: 
