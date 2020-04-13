@@ -93,19 +93,13 @@ button.addEventListener('click', () => {
           //add_headline_image();          
           addDataToUI(data, model);
           if(rendered['left'] && rendered['right']) {
-            resetPage()
-            //button.disabled = false;
-            //button.textContent = 'Generate'          
-            //removeSpinner()
+            resetPage()            
           }  
       }).catch(function(error){
         console.log("Got error for " + model + ". Error: " + error)
         resetPage()
         document.getElementById("in-progress").textContent = "503: Service Unavailable. Try again later or use an existing prompt from the list."
         document.getElementById("in-progress").style.color = "red";        
-        //button.disabled = false;
-        //button.textContent = 'Generate'          
-        //removeSpinner()
       });;
     });
 });
