@@ -1,3 +1,5 @@
+# Main backend app that runs a web app to do the inferencing
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -18,6 +20,7 @@ from urllib.parse import unquote
 from datetime import datetime
 import decimal
 
+# Required for inserting a number field to DynamoDB
 class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, decimal.Decimal):
@@ -29,6 +32,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 app = Starlette(debug=False)
 
+# Since we are running the app as part of systemd
 script_path = os.path.dirname(os.path.abspath( __file__ ))
 
 logging.basicConfig(level=logging.INFO,
@@ -38,13 +42,13 @@ logging.basicConfig(level=logging.INFO,
 
 logging.info('Starting gpt2 session')
 
+# Model left is default valuee
 model = os.environ.get('MODEL', 'left')
-print("Got model = " + model)
 checkpoint_path = script_path + "/model/" + model+ "/checkpoint/"
 sess = gpt2.start_tf_sess(threads=1)
 gpt2.load_gpt2(sess, checkpoint_dir=checkpoint_path)
 
-# Touch the file which the process_queue waits on
+# Touch the file which the process_queue waits on to allow the model to be loaded and be ready
 Path('/tmp/model-loaded-'+model).touch()
 
 # Needed to avoid cross-domain issues
@@ -52,27 +56,25 @@ response_header = {
     'Access-Control-Allow-Origin': '*'
 }
 
-generate_count = 0
-
+# Utility function to remove duplicate elements from a list. Used to remove duplicate sentences
 def unique(sequence):
     seen = set()
     return [x for x in sequence if not (x in seen or seen.add(x))]
 
+# Perform sentiment analysis of the tweets using AWS Comprehend service
 def get_sentiment(all_tweets):
     comprehend = boto3.client(service_name='comprehend', region_name='ap-south-1')
     result_list = comprehend.batch_detect_sentiment(TextList=all_tweets, LanguageCode='en')['ResultList']
     max_score_list = []
     top_sentiment_list = []
     for result in result_list:
-        max_key = max(result['SentimentScore'], key=result['SentimentScore'].get)
-        #print(result)
-        #print(result['SentimentScore'][max_key])
+        max_key = max(result['SentimentScore'], key=result['SentimentScore'].get)        
         max_score_list.append(result['SentimentScore'][max_key])
         top_sentiment_list.append(max_key)
-    #print(max_score_list)
-    #print(top_sentiment_list)
-    #print(json.dumps(result, indent=4))
-    # First sort based on score, keep the top N (for eg. 5), then sort again based on sentiment
+    
+    # 1) First sort based on score since high scoring tweets are generally more coherent
+    # 2) Keep the top N (for eg. 10)
+    # 3) Then sort again based on sentiment so that we can display in proper order
     max_s, senti_s, tweets_s = map(list, zip(*sorted(zip(max_score_list, top_sentiment_list, all_tweets), reverse=True)))
     top_sentiment_list_s, max_score_list_s, tweets_list_s = map(list, zip(*sorted(zip(senti_s[:10], max_s[:10], tweets_s[:10]), reverse=True)))
     return tweets_list_s, top_sentiment_list_s, max_score_list_s
@@ -94,9 +96,10 @@ async def homepage(request):
     #prompt=params.get('prompt', '')[:100]
     prompt=(params.get('prompt', ''))
     if prompt is None:
-        prompt = "<|startoftext|>"
+        prompt = "<|startoftext|>" # GPT2's standard start token
     logging.info('Generating text for [%s], model: [%s]', prompt, model)
 
+    # Run the inferencing and get the raw unprocessed tweets
     unproc_tweets_list = gpt2.generate(sess, checkpoint_dir=checkpoint_path,
                              length=int(params.get('length', 80)),
                              nsamples=int(params.get('num_samples', 20)),
@@ -112,7 +115,9 @@ async def homepage(request):
                          )
     proc_tweets_list = []
     deleted_list = []
-
+    
+    # Not all tweets are gold, so do some cleanup
+    # Remove duplicate sentences/words and then get rid of extremely short tweets
     for raw_tweet in unproc_tweets_list:
         # Remove \n and " characters
         t=raw_tweet.replace('\n',' ')
@@ -128,18 +133,14 @@ async def homepage(request):
             proc_tweets_list.append(t)
         else:
             deleted_list.append(t)
-
-    #logging.info("======2=======")
-    #logging.info(proc_tweets_list)
-    #logging.info("======3=======")
-    #logging.info(deleted_list)
-    #logging.info("==============")
+    
     logging.info("Generated %d tweets", len(proc_tweets_list))
 
     if len(proc_tweets_list) > 0:
         # Find the sentiment of the tweets using AWS comprehend 
         tweets_list, sentiment_list, score_list = get_sentiment(proc_tweets_list)
 
+        # Store in DynamoDB
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
         table = dynamodb.Table('gpt2-tweets-' + model)
         json_text = json.dumps(tweets_list)
@@ -162,16 +163,6 @@ async def homepage(request):
 
     logging.info('Finished executing script')
 
-#    generate_count += 1
-#    if generate_count == 8:
-#        # Reload model to prevent Graph/Session from going OOM
-#        tf.reset_default_graph()
-#        sess.close()
-#        sess = gpt2.start_tf_sess(threads=1)
-#        gpt2.load_gpt2(sess)
-#        generate_count = 0
-#
-#    gc.collect()
     return UJSONResponse({'text': proc_tweets_list}, headers=response_header)
 
 if __name__ == '__main__':
