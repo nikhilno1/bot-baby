@@ -1,11 +1,10 @@
+# Read messages from an SQS Queue (FIFO) and trigger the inferencing
 import time
 import sys
 import boto3
 import logging
 import os
 from urllib.parse import unquote
-
-# Wait until model loaded
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s',
@@ -16,13 +15,14 @@ sqs = boto3.resource('sqs')
 # Get the queue
 queue = sqs.get_queue_by_name(QueueName='gpt2-inference.fifo')
 
-run_time = 10 # in minutes
-timeout = time.time() + run_time*60   
+# Wait for run_time minutes before shutting down the instance to keep costs low
+run_time = 15 # in minutes
+timeout = time.time() + run_time*60
+model_loaded_prefix = "/tmp/model-loaded-"
 
 while time.time() < timeout:
     for message in queue.receive_messages(MessageAttributeNames=['model','prompt',"num_samples","batch_size","length","temperature","top_p","top_k"]):
-        # Get the custom author message attribute if it was set
-        #print("message=",message.message_attributes)
+        # Get the custom author message attribute if it was set        
         if message.message_attributes is not None:
             model = message.message_attributes.get('model').get('StringValue')
             prompt_url = message.message_attributes.get('prompt').get('StringValue')
@@ -32,28 +32,30 @@ while time.time() < timeout:
             temperature = message.message_attributes.get('temperature').get('StringValue')
             top_p = message.message_attributes.get('top_p').get('StringValue')
             top_k = message.message_attributes.get('top_k').get('StringValue')
-
-            # Print out the body and author (if set)
+            
             #print('Message {0} {1} {2} {3} {4} {5} {6} {7}'.format(model, prompt, num_samples, batch_size, length, temperature, top_p, top_k))
             timeout = time.time() + run_time*60
             cmd = "sudo shutdown -h +" + str(run_time)
             os.system(cmd)
 
+            # Wait for a minute for model to be loaded if it is not still
             model_timeout = time.time() + 60   
-            while not os.path.exists("/tmp/model-loaded-" + model):
+            while not os.path.exists(model_loaded_prefix + model):
                 time.sleep(1)
                 if time.time() > model_timeout:
                     break
 
             port = 8081 if model == "left" else 8082
             cmd = f"curl --location --request GET 'http://127.0.0.1:{port}?prompt={prompt_url}&num_samples={num_samples}&batch_size={batch_size}&length={length}&temperature={temperature}&top_p={top_p}&top_k={top_k}' --header 'Content-Type: application/json'"
-
+            
+            # Replace %20 with ' '
             prompt = unquote(prompt_url)
             logging.info('process_queue: Generating text for [%s], model: [%s]', prompt, model)
             print(cmd)
             os.system(cmd)
 
-            # Add all new prompts to a file for auto-completion..but only for 1 model
+            # Add all new prompts to a file which will be later updated to S3 for auto-completion..
+            # Do it only for 1 model since prompt is same            
             if model == "left":
                 with open("/home/ubuntu/new_prompts.txt", "a") as output:
                     output.write('%s\n' % prompt)
@@ -68,14 +70,8 @@ while time.time() < timeout:
     #sys.stdout.flush()
     time.sleep(1)
 
-# Changed to systemd script on shutdown
-# Update the file on S3 for it to take effect
-#cmd = "/home/ubuntu/update_file_s3.sh"
-#os.system(cmd)
-#logging.info("Update prompts file on S3")
-
 # Last run_time mins no messages received so shutdown the instance
 cmd = "sudo shutdown -h now"
-print("Shutting down instance NOW")
 logging.info("Shutting down instance NOW")
 os.system(cmd)
+sys.exit()
