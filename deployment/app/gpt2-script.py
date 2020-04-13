@@ -1,3 +1,6 @@
+# Use gpt2-app.py as this doesn't contain latest changes
+# Run inferencing as a python script. Takes extra 15 seconds to load the model.
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
@@ -13,6 +16,7 @@ import boto3
 import nltk
 from nltk.tokenize import sent_tokenize
 
+# Locking mechanism to serialize multiple invocations and ensure only 1 instance of the script runs.
 def get_lock(process_name):
     # Without holding a reference to our socket somewhere it gets garbage
     # collected when the function exits
@@ -101,18 +105,12 @@ def main():
         del t_list[-1]
         t = ' '.join(t_list)
 
-
         # Some tweets have repeated words. Remove the ones below a threshold. 
         if len(set(t.split())) > 20:
             proc_tweets_list.append(t)
         else:
             deleted_list.append(t)
-
-    print("======1======")
-    print(proc_tweets_list)
-    print("======2======")
-    print(deleted_list)
-
+    
     if len(proc_tweets_list) > 0:
         dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
         table = dynamodb.Table('gpt2-tweets-' + args.model)
