@@ -1,3 +1,5 @@
+# Simple script to trigger inferencing directly on the GPU instance
+
 import urllib.parse
 import os
 
