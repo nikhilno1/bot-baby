@@ -40,7 +40,7 @@ I have an API gateway that forwards requests to a lambda function. The lambda fi
 
 ### Files: 
 1. [find_sentiment.py](deployment/app/find_sentiment.py): Sample script to perform batch sentiment analysis using AWS Comprehend.
-2. [gpt2-app.py](deployment/app/gpt2-app.py): Main backend app that runs a web app to do the inferencing
+2. [gpt2-app.py](deployment/app/gpt2-app.py): Main backend app that runs a web app to do the inferencing. Based on [app.py](https://github.com/minimaxir/gpt-2-cloud-run/blob/master/app.py)
 3. [gpt2-script.py](deployment/app/gpt2-script.py): Run inferencing as a python script. (DEPRECATED. Use gpt2-app.py)
 4. [process_queue.py](deployment/app/process_queue.py): Read messages from an SQS Queue (FIFO) and trigger the inferencing
 5. [run_inference.py](deployment/app/run_inference.py): Simple script to trigger inferencing directly on the GPU instance
