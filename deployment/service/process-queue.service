@@ -1,14 +1,14 @@
 [Unit]
-Description=process-sqs-messages
+Description=process-queue-messages
 After=network.target network-online.target
 
 [Service]
 Type=simple
 User=ubuntu
 Restart=always
-ExecStartPre=/bin/mkdir -p /home/ubuntu/var/run/process-sqs
-PIDFile=/home/ubuntu/var/run/process-sqs/process-sqs.pid
-ExecStart=/home/ubuntu/env/bin/python /home/ubuntu/process_sqs.py
+ExecStartPre=/bin/mkdir -p /home/ubuntu/var/run/process-queue
+PIDFile=/home/ubuntu/var/run/process-queue/process-queue.pid
+ExecStart=/home/ubuntu/env/bin/python /home/ubuntu/process_queue.py
 
 [Install]
 WantedBy=multi-user.target
